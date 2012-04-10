@@ -1,0 +1,8 @@
+-od"bin"
+-of"bin/Minitrue"
+
+-I""
+
+"src/main.d"
+
+-L-lzmq
