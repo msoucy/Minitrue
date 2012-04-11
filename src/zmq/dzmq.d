@@ -48,6 +48,37 @@ private template MakeFuncs(string name, string type) {
 	const char[] MakeFuncs = MakeGetFunc!(name,type)~"\n"~MakeSetFunc!(name,type);
 }
 
+template SockOptFuncs(string both, string set, string get) {
+	const char[] SockOptFuncs = `// Get and Set
+mixin(`~both~`!("HWM", "ulong"));
+mixin(`~both~`!("SWAP", "long"));
+mixin(`~both~`!("AFFINITY", "ulong"));
+mixin(`~both~`!("IDENTITY", "ulong"));
+// These two don't have matching constants
+//mixin(`~both~`!("RCVTIMEO", "int"));
+//mixin(`~both~`!("SNDTIMEO", "int"));
+mixin(`~both~`!("RATE", "long"));
+mixin(`~both~`!("RECOVERY_IVL", "long"));
+mixin(`~both~`!("RECOVERY_IVL_MSEC", "long"));
+mixin(`~both~`!("MCAST_LOOP", "long"));
+mixin(`~both~`!("SNDBUF", "long"));
+mixin(`~both~`!("RCVBUF", "long"));
+mixin(`~both~`!("LINGER", "int"));
+mixin(`~both~`!("RECONNECT_IVL", "int"));
+mixin(`~both~`!("RECONNECT_IVL_MAX", "int"));
+mixin(`~both~`!("BACKLOG", "int"));
+
+// These ones are set-only
+mixin(`~set~`!("SUBSCRIBE", "string"));
+mixin(`~set~`!("UNSUBSCRIBE", "string"));
+
+// These ones are get-only
+mixin(`~get~`!("TYPE", "int"));
+mixin(`~get~`!("RCVMORE", "long"));
+mixin(`~get~`!("FD", "socket_t"));
+mixin(`~get~`!("EVENTS", "uint"));`;
+}
+
 /*  Socket options.                                                           */
 immutable enum Option
 {
@@ -118,34 +149,7 @@ class Socket {
 	}
 	@property {
 		// This is why string mixins are awesome
-		// Get and Set
-		mixin(MakeFuncs!("HWM", "ulong"));
-		mixin(MakeFuncs!("SWAP", "long"));
-		mixin(MakeFuncs!("AFFINITY", "ulong"));
-		mixin(MakeFuncs!("IDENTITY", "ulong"));
-		// These two don't have matching constants
-		//mixin(MakeFuncs!("RCVTIMEO", "int"));
-		//mixin(MakeFuncs!("SNDTIMEO", "int"));
-		mixin(MakeFuncs!("RATE", "long"));
-		mixin(MakeFuncs!("RECOVERY_IVL", "long"));
-		mixin(MakeFuncs!("RECOVERY_IVL_MSEC", "long"));
-		mixin(MakeFuncs!("MCAST_LOOP", "long"));
-		mixin(MakeFuncs!("SNDBUF", "long"));
-		mixin(MakeFuncs!("RCVBUF", "long"));
-		mixin(MakeFuncs!("LINGER", "int"));
-		mixin(MakeFuncs!("RECONNECT_IVL", "int"));
-		mixin(MakeFuncs!("RECONNECT_IVL_MAX", "int"));
-		mixin(MakeFuncs!("BACKLOG", "int"));
-		
-		// These ones are set-only
-		mixin(MakeSetFunc!("SUBSCRIBE", "string"));
-		mixin(MakeSetFunc!("UNSUBSCRIBE", "string"));
-		
-		// These ones are get-only
-		mixin(MakeGetFunc!("TYPE", "int"));
-		mixin(MakeGetFunc!("RCVMORE", "long"));
-		mixin(MakeGetFunc!("FD", "socket_t"));
-		mixin(MakeGetFunc!("EVENTS", "uint"));
+		mixin(SockOptFuncs!("MakeFuncs", "MakeSetFunc", "MakeGetFunc"));
 	}
 	int bind(string endpoint) {
 		return zmq_bind(_socket, endpoint.toStringz());

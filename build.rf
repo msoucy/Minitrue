@@ -5,6 +5,7 @@
 
 "src/bigbrother.d"
 "src/main.d"
+"src/zmq/device.d"
 "src/zmq/dzmq.d"
 "src/zmq/zmq.d"
 "src/zmq/zmq_utils.d"
