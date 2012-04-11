@@ -4,5 +4,7 @@
 -I""
 
 "src/main.d"
+"src/zmq.d"
+"src/zmq_utils.d"
 
 -L-lzmq
