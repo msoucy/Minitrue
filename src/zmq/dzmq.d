@@ -15,30 +15,26 @@ version (win32)
 alias extern(C) void function(void *data, void *hint) zmq_free_fn;
 
 private template MakeSetFunc(string name, string type) {
-	const char[] MakeSetFunc = type~` opt(Option N:Option.`~name~`)(`~name~` newval) {
-	pragma(msg, "`~type~`");
+	const char[] MakeSetFunc = type~` opt(Option N:Option.`~name~`)(`~type~` newval) {
 	auto err = zmq_setsockopt(_socket, N, &newval, `~type~`.sizeof);
 	if(err) {
 		throw new ZMQError();
-	} else {
-		return newval;
 	}
 }`;
 }
 private template MakeSetFunc(string name, string type : "string") {
-	const char[] MakeSetFunc = type~` opt(Option N:Option.`~name~`)(`~name~` newval) {
-	auto err = zmq_setsockopt(_socket, N, newval.ptr, newval.length);
+	const char[] MakeSetFunc = type~` opt(Option N:Option.`~name~`)(`~type~` newval) {
+	auto err = zmq_setsockopt(_socket, cast(int)N, cast(void*)newval.ptr, newval.length);
 	if(err) {
 		throw new ZMQError();
-	} else {
-		return newval;
 	}
+	return newval;
 }`;
 }
 private template MakeGetFunc(string name, string type) {
 	const char[] MakeGetFunc = type~` opt(Option N:Option.`~name~`)() {
 	size_t len;
-	int ret;
+	`~type~` ret;
 	auto err = zmq_getsockopt(_socket, N, &ret, &len);
 	if(err) {
 		throw new ZMQError();

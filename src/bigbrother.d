@@ -1,8 +1,9 @@
 module bigbrother;
 
 import std.array;
-import std.stdio;
 import std.json;
+import std.stdio;
+import std.string;
 
 private import dzmq;
 
@@ -37,8 +38,7 @@ class MessagingSubscriber {
     this(string hub_addr, int hub_port, string[] subscriptions=[""]) {
         this.subscription = new dzmq.Socket(context, Socket.Type.SUB);
         foreach(string sub;subscriptions) {
-        	long l;
-            this.subscription.opt!Option.RATE(l);
+            this.subscription.opt!(Option.SUBSCRIBE) = sub;
         }
         this.addr = hub_addr;
         this.port = hub_port;
@@ -48,8 +48,8 @@ class MessagingSubscriber {
         this.subscription.connect("tcp://{}:{}".format(this.addr,this.port));
         while(1) {
             auto data = this.subscription.recv();
-            data = data.split("::");
-            data = "::".join(data[1..$]); //throw out the routing information we do not need it here
+            auto i=data.indexOf("::");
+            data = data[(i!=-1?i:0)..$]; //throw out the routing information we do not need it here
             /*t = Thread(target=self.process, args=(json.loads(data),));
             t.start()*/
         }
