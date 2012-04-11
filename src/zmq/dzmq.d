@@ -9,6 +9,7 @@ version (win32)
     alias SOCKET socket_t;
 } else {
     alias int socket_t;
+    enum EAGAIN = 11; // OH GOD JANKY
 }
 
 alias extern(C) void function(void *data, void *hint) zmq_free_fn;
@@ -102,6 +103,18 @@ class Socket {
 	int connect(string endpoint) {
 		return zmq_connect(_socket, endpoint.toStringz());
 	}
+	int send(Message msg, int flags=0) {
+		int nbytes = zmq_send (_socket, msg.getmsg(), flags);
+        if (nbytes >= 0) return nbytes;
+        else if (zmq_errno () == EAGAIN) return 0;
+        else throw new ZMQError();
+	}
+	int recv(Message msg, int flags=0) {
+		int nbytes = zmq_recv (_socket, msg.getmsg(), flags);
+        if (nbytes >= 0) return nbytes;
+        else if (zmq_errno () == EAGAIN) return 0;
+        else throw new ZMQError();
+	}
 	alias _socket this;
 }
 
@@ -170,11 +183,19 @@ public:
     size_t size () {
         return zmq_msg_size (&msg);
     }
-
+    
+    zmq_msg_t* getmsg() {
+    	return &msg;
+    }
+    
+    alias msg this;
+    
 };
 
 int poll(zmq_pollitem_t *items, int nitems, long timeout) {
-	return zmq_poll(items, nitems, timeout);
+	auto rc = zmq_poll(items, nitems, timeout);
+	if (rc == -1) throw new ZMQError();
+	return rc;
 }
 
 class ZMQError : Error {
