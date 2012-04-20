@@ -1,6 +1,8 @@
 module dzmq;
 
 import std.string : toStringz, format;
+import std.array: canFind;
+import std.stdio;
 
 import zmq;
 
@@ -14,72 +16,7 @@ version (win32)
 
 alias extern(C) void function(void *data, void *hint) zmq_free_fn;
 
-private template MakeSetFunc(string name, string type) {
-	const char[] MakeSetFunc = type~` opt(Option N:Option.`~name~`)(`~type~` newval) {
-	auto err = zmq_setsockopt(_socket, N, &newval, `~type~`.sizeof);
-	if(err) {
-		throw new ZMQError();
-	}
-}`;
-}
-private template MakeSetFunc(string name, string type : "string") {
-	const char[] MakeSetFunc = type~` opt(Option N:Option.`~name~`)(`~type~` newval) {
-	auto err = zmq_setsockopt(_socket, cast(int)N, cast(void*)newval.ptr, newval.length);
-	if(err) {
-		throw new ZMQError();
-	}
-	return newval;
-}`;
-}
-private template MakeGetFunc(string name, string type) {
-	const char[] MakeGetFunc = type~` opt(Option N:Option.`~name~`)() {
-	size_t len;
-	`~type~` ret;
-	auto err = zmq_getsockopt(_socket, N, &ret, &len);
-	if(err) {
-		throw new ZMQError();
-	} else {
-		assert(len==ret.sizeof);
-		return ret;
-	}
-}`;
-}
-private template MakeFuncs(string name, string type) {
-	const char[] MakeFuncs = MakeGetFunc!(name,type)~"\n"~MakeSetFunc!(name,type);
-}
-
-template SockOptFuncs(string both, string set, string get) {
-	const char[] SockOptFuncs = `// Get and Set
-mixin(`~both~`!("HWM", "ulong"));
-mixin(`~both~`!("SWAP", "long"));
-mixin(`~both~`!("AFFINITY", "ulong"));
-mixin(`~both~`!("IDENTITY", "ulong"));
-// These two don't have matching constants
-//mixin(`~both~`!("RCVTIMEO", "int"));
-//mixin(`~both~`!("SNDTIMEO", "int"));
-mixin(`~both~`!("RATE", "long"));
-mixin(`~both~`!("RECOVERY_IVL", "long"));
-mixin(`~both~`!("RECOVERY_IVL_MSEC", "long"));
-mixin(`~both~`!("MCAST_LOOP", "long"));
-mixin(`~both~`!("SNDBUF", "long"));
-mixin(`~both~`!("RCVBUF", "long"));
-mixin(`~both~`!("LINGER", "int"));
-mixin(`~both~`!("RECONNECT_IVL", "int"));
-mixin(`~both~`!("RECONNECT_IVL_MAX", "int"));
-mixin(`~both~`!("BACKLOG", "int"));
-
-// These ones are set-only
-mixin(`~set~`!("SUBSCRIBE", "string"));
-mixin(`~set~`!("UNSUBSCRIBE", "string"));
-
-// These ones are get-only
-mixin(`~get~`!("TYPE", "int"));
-mixin(`~get~`!("RCVMORE", "long"));
-mixin(`~get~`!("FD", "socket_t"));
-mixin(`~get~`!("EVENTS", "uint"));`;
-}
-
-/*  Socket options.                                                           */
+// Socket options
 immutable enum Option
 {
     HWM             = ZMQ_HWM,
@@ -100,7 +37,7 @@ immutable enum Option
     LINGER          = ZMQ_LINGER,
     RECONNECT_IVL   = ZMQ_RECONNECT_IVL,
     BACKLOG         = ZMQ_BACKLOG,
-    RECOVERY_IVL_MSEC = ZMQ_RECOVERY_IVL_MSEC, /*opt. recovery time, reconcile in 3.x */
+    RECOVERY_IVL_MSEC = ZMQ_RECOVERY_IVL_MSEC,
     RECONNECT_IVL_MAX = ZMQ_RECONNECT_IVL_MAX
 }
 
@@ -118,6 +55,14 @@ class Context {
 }
 
 class Socket {
+	private {
+		const longOptions = [Option.SWAP, Option.RATE, Option.RECOVERY_IVL,
+			Option.RECOVERY_IVL_MSEC, Option.MCAST_LOOP, Option.SNDBUF, Option.RCVBUF, Option.RCVMORE];
+		const intOptions = [Option.LINGER, Option.RECONNECT_IVL,
+			Option.RECONNECT_IVL_MAX, Option.BACKLOG, Option.TYPE];
+		const ulongOptions = [Option.HWM, Option.AFFINITY, Option.IDENTITY];
+		const stringOptions = [Option.SUBSCRIBE, Option.UNSUBSCRIBE];
+	}
 	public immutable enum Type {
 		PAIR        = ZMQ_PAIR,
 	    PUB         = ZMQ_PUB,
@@ -148,9 +93,88 @@ class Socket {
 		zmq_close(context);
 	}
 	@property {
-		// This is why string mixins are awesome
-		mixin(SockOptFuncs!("MakeFuncs", "MakeSetFunc", "MakeGetFunc"));
+		void subscribe(string topic) {
+			auto err = zmq_setsockopt(_socket, cast(int)Option.SUBSCRIBE, cast(char*)topic.ptr, topic.length);
+			if(err) {
+				throw new ZMQError();
+			}
+		}
+		void unsubscribe(string topic) {
+			auto err = zmq_setsockopt(_socket, cast(int)Option.UNSUBSCRIBE, cast(char*)topic.ptr, topic.length);
+			if(err) {
+				throw new ZMQError();
+			}
+		}
+		void identity(string ident) {
+			auto err = zmq_setsockopt(_socket, cast(int)Option.IDENTITY, cast(char*)ident.ptr, ident.length);
+			if(err) {
+				throw new ZMQError();
+			}
+		}
+		string identity() {
+			char[256] data;
+			ulong len = 0;
+			auto err = zmq_getsockopt(_socket, cast(int)Option.IDENTITY, data.ptr, &len);
+			if(err) {
+				throw new ZMQError();
+			}
+			//string ret = "";
+			//foreach(i;0..len) ret ~= data[i];
+			string ret = data[0..len].idup;
+			return ret;
+		}
 	}
+	
+	T opt(Option option, T)()
+	in {
+		static if(intOptions.canFind(option)) {
+			static assert(is(T == int));
+		} else static if(longOptions.canFind(option)) {
+			static assert(is(T == long));
+		} else static if(ulongOptions.canFind(option)) {
+			static assert(is(T == ulong));
+		} else if(stringOptions.canFind(option)) {
+			static assert(is(T == int));
+		} else static if(option == Option.FD) {
+			static assert(is(T == socket_t));
+		} else {
+			static assert(0);
+		}
+	} body {
+		size_t len;
+		T ret;
+		auto err = zmq_getsockopt(_socket, option, &ret, &len);
+		if(err) {
+			// err is somehow not 0
+			throw new ZMQError();
+		} else {
+			assert(len==ret.sizeof);
+			return ret;
+		}
+	}
+	
+	void opt(Option option, T)(T newval) 
+	in {
+		static if(intOptions.canFind(option)) {
+			static assert(is(T == int));
+		} else static if(longOptions.canFind(option)) {
+			static assert(is(T == long));
+		} else static if(ulongOptions.canFind(option)) {
+			static assert(is(T == ulong));
+		} else static if(stringOptions.canFind(option)) {
+			static assert(is(T == int));
+		} else static if(option == Option.FD) {
+			static assert(is(T == socket_t));
+		} else {
+			static assert(0);
+		}
+	} body {
+		auto err = zmq_setsockopt(_socket, cast(int)option, cast(void*)&newval, T.sizeof);
+		if(err) {
+			throw new ZMQError();
+		}
+	}
+	
 	int bind(string endpoint) {
 		return zmq_bind(_socket, endpoint.toStringz());
 	}
@@ -271,6 +295,12 @@ int poll(zmq_pollitem_t *items, int nitems, long timeout) {
 class ZMQError : Error {
 public:
     this () {
-    	super( format("%s", zmq_strerror(zmq_errno ())), file, line );
+    	char* errmsg = zmq_strerror(zmq_errno ());
+    	string msg = "";
+    	char* tmp = errmsg;
+    	while(*tmp) {
+    		msg ~= *(tmp++);
+    	}
+    	super( format("%s", msg/+, file, line +/));
 	}
 };

@@ -122,7 +122,7 @@ class MessagingSubscriber {
     	this.context = new dzmq.Context(1);
         this.subscription = new dzmq.Socket(this.context, Socket.Type.SUB);
         foreach(string sub;subscriptions) {
-            this.subscription.opt!(Option.SUBSCRIBE) = sub;
+            this.subscription.subscribe = sub; // This syntax officially rocks
         }
         this.addr = hub_addr;
         this.port = hub_port;

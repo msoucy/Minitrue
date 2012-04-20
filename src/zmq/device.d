@@ -22,38 +22,16 @@ private struct SockOpt {
 	} 
 }
 
-private template MakeSetFunc(string name, string type) {
-	const char[] MakeSetFunc = type~` opt(Option N:Option.`~name~`)(`~type~` newval) {
-	auto err = zmq_setsockopt(_socket, N, &newval, `~type~`.sizeof);
-	if(err) {
-		throw new ZMQError();
-	}
+private template MakeOptFunc(string name, string type) {
+	const char[] MakeOptFunc = type~` opt_in(Option N:Option.`~name~`)(Variant newval) {
+	assert(newval.peek!(`~type~`)() !is null);
+	this._in_sockopts ~= SockOpt(N, newval.get!(`~type~`)());
+	return newval.get!(`~type~`)();
+}` ~ "\n" ~ type~` opt_out(Option N:Option.`~name~`)(Variant newval) {
+	assert(newval.peek!(`~type~`)() !is null);
+	this._out_sockopts ~= SockOpt(N, newval.get!(`~type~`)());
+	return newval.get!(`~type~`)();
 }`;
-}
-private template MakeSetFunc(string name, string type : "string") {
-	const char[] MakeSetFunc = type~` opt(Option N:Option.`~name~`)(`~type~` newval) {
-	auto err = zmq_setsockopt(_socket, cast(int)N, cast(void*)newval.ptr, newval.length);
-	if(err) {
-		throw new ZMQError();
-	}
-	return newval;
-}`;
-}
-private template MakeGetFunc(string name, string type) {
-	const char[] MakeGetFunc = type~` opt(Option N:Option.`~name~`)() {
-	size_t len;
-	`~type~` ret;
-	auto err = zmq_getsockopt(_socket, N, &ret, &len);
-	if(err) {
-		throw new ZMQError();
-	} else {
-		assert(len==ret.sizeof);
-		return ret;
-	}
-}`;
-}
-private template MakeFuncs(string name, string type) {
-	const char[] MakeFuncs = MakeGetFunc!(name,type)~"\n"~MakeSetFunc!(name,type);
 }
 
 class Device {
@@ -82,9 +60,9 @@ class Device {
 	void connect_in(string addr) {_in_connects ~= addr;}
 	void connect_out(string addr) {_out_connects ~= addr;}
 	
-	//void setsockopt_in(string addr) {_in_sockopts ~= addr;}
-	//void setsockopt_out(string addr) {_out_sockopts ~= addr;}
-	//mixin(dzmq.SockOptFuncs!);
+	void opt_in(dzmq.Option option, Variant newval) {
+		this._in_sockopts ~= SockOpt(option, newval);
+	}
 	
 	private void setup_sockets(out Socket ins, out Socket outs) {
 		Context ctx = new Context(1);
@@ -95,6 +73,18 @@ class Device {
             outs = ins;
         } else {
             outs = new Socket(ctx, this.out_type);
+        }
+        // Fill in the options
+        foreach(opt;this._in_sockopts) {
+			/+
+			switch(opt.option) {
+				case Option.HWM: {
+					assert(opt.value.peek!(string)() !is null);
+		        	/*ins.opt!Option.HWM = */opt.value.get!string();
+					break;
+				}
+			}
+			+/
         }
 	}
 	
