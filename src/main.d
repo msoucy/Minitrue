@@ -67,8 +67,9 @@ void dmain()
 }
 
 void jsontest() {
-	stdout.flush();
-	auto x = new BBProtocol(`{"version":"ABC\"DEF"}`);
+	writef("==> ");stdout.flush();
+	string s = stdin.readln()[0..$-1];
+	auto x = new BBProtocol(`{"version":"`~s~`"}`);
 	writef("%s\n", x.ver);
 }
 

@@ -49,7 +49,29 @@ private {
 	 * TODO: Incomplete
 	 */
 	string unescape(string source) {
-		return source.replace("\\","\\\\").replace(`"`,`\"`);
+		//return source.replace("\\","\\\\").replace(`"`,`\"`);
+		string ret;
+		foreach(char ch;source) {
+			switch (ch) {
+	            case '"': ret ~= `\"`; break;
+	            case '\\': ret ~= `\\`; break;
+	            case '/': ret ~= `\/`; break;
+	            case '\b': ret ~= `\b`; break;
+	            case '\f': ret ~= `\f`; break;
+	            case '\n': ret ~= `\n`; break;
+	            case '\r': ret ~= `\r`; break;
+	            case '\t': ret ~= `\t`; break;
+	            default: {
+	            	if(ch < 0x001F) {
+	            		ret ~= format("\\u%04x\n", ch);
+	            	} else {
+	            		ret ~= ch;
+            		}
+	            	break;
+	        	}
+	        }
+		}
+		return ret;
 	}
 }
 
@@ -82,16 +104,7 @@ class BBProtocol : JSONProtocol{
 		}
 	}
 	string json() {
-		return format(`{"forward" : %s, "listen" : "%s", "version" : "%s"}`, forward, listen.unescape, ver.unescape);
+		return format(`{"forward" : %s, "listen" : "%s", "version" : "%s"}`,
+			forward, listen.unescape(), ver.unescape());
 	}
-}
-
-private template MakeMember(string local, T, string jname=local) { 
-	enum MakeMember = T~` `~local~`\n`;
-}
-
-private template CheckMember(string local, string type, string jname=local) { 
-	enum CheckMember = `if("`~jname~`" in js.object) {
-	`~local~` = jsonExpect!`~type~`(js.object["`~jname~`"]);
-}`;
 }

@@ -71,12 +71,12 @@ class Socket {
  	}
 	
 	void bind(string addr) {
-		if(zmq_bind (this.socket, addr.toStringz) != 0) {
+		if(zmq_bind (this.socket, addr.toStringz()) != 0) {
 			throw new ZMQError();
 		}
 	}
 	void connect(string endpoint) {
-		if(zmq_connect(this.socket, endpoint.toStringz) != 0) {
+		if(zmq_connect(this.socket, endpoint.toStringz()) != 0) {
 			throw new ZMQError();
 		}
 	}
@@ -327,7 +327,7 @@ class Socket {
 		
 		// Socket identity
 		void identity(string value) {
-			if(zmq_setsockopt(this.socket, ZMQ_IDENTITY, cast(void*)value.toStringz, value.length)) {
+			if(zmq_setsockopt(this.socket, ZMQ_IDENTITY, cast(void*)value.toStringz(), value.length)) {
 				throw new ZMQError();
 			}
 		}
@@ -362,12 +362,12 @@ class Socket {
 	
 	// Subscribe and unsubscribe
 	void subscribe(string value) {
-		if(zmq_setsockopt(this.socket, ZMQ_SUBSCRIBE, cast(void*)value.toStringz, value.length)) {
+		if(zmq_setsockopt(this.socket, ZMQ_SUBSCRIBE, cast(void*)value.toStringz(), value.length)) {
 			throw new ZMQError();
 		}
 	}
 	void unsubscribe(string value) {
-		if(zmq_setsockopt(this.socket, ZMQ_SUBSCRIBE, cast(void*)value.toStringz, value.length)) {
+		if(zmq_setsockopt(this.socket, ZMQ_SUBSCRIBE, cast(void*)value.toStringz(), value.length)) {
 			throw new ZMQError();
 		}
 	}
