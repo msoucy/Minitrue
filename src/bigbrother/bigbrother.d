@@ -1,25 +1,41 @@
+/** @file bigbrother.d
+BigBrother system wrappers
+
+@author Matthew Soucy <msoucy@csh.rit.edu>
+@date May 9, 2012
+@version 0.0.1
+*/
 module bigbrother;
 
-import std.array, std.algorithm;
+import std.array, std.algorithm, std.string;
 
-import dzmq, protocol;
+import dzmq, protocol, devices;
 
-void send_topic(Socket s, string topic, string msg, int flags=0) {
-	s.send(topic, flags|Socket.Flags.SNDMORE);
-	s.send(msg, flags);
-}
 
-string[] recv_topic(Socket s, out string topic, int flags=0) {
-	string tmptopic = s.recv(flags);
-	scope(success) topic = tmptopic;
-	if(s.more) return s.recv_multipart(flags);
-	else return [];
-}
+/**
+BigBrother message sender
 
+Send a BigBrother message via a socket
+
+Sends an already created BBMessage via the Socket
+
+@author Matthew Soucy <msoucy@csh.rit.edu>
+@date May 9, 2012
+*/
 void send_bb(Socket s, BBMessage msg, int flags=0) {
 		s.send_multipart([msg.topic, msg.routing, msg.data], flags);
 }
 
+/**
+BigBrother message receiver
+
+Receive a BigBrother message via a socket
+
+Receives and forms a BBMessage from the provided socket
+
+@authors Matthew Soucy <msoucy@csh.rit.edu>
+@date May 9, 2012
+*/
 BBMessage recv_bb(Socket s, int flags=0) {
 	string[] raw = s.recv_multipart(flags);
 	// We can verify this, since the BigBrother protocol requires it
@@ -31,32 +47,66 @@ BBMessage recv_bb(Socket s, int flags=0) {
 	return msg;
 }
 
+/// BigBrother message wrapper
+/**
+Store and parse a BigBrother message
+
+@author Matthew Soucy <msoucy@csh.rit.edu>
+@date May 9, 2012
+*/
 struct BBMessage {
+	/// Topic of the message
 	string topic;
+	/// List of all hubs that the message has visited
 	string[] routes;
+	/// Message body
+	string data;
+	
+	/// Protocol-ready form of the routing information
 	@property string routing() {
 		return routes.join(":");
 	}
-	string data;
 }
 
-class BBHub {
+/// BigBrother Hub class
+/**
+Handles a BigBrother hub according to the specification
+
+@author Matthew Soucy <msoucy@csh.rit.edu>
+@date May 9, 2012
+*/
+class Hub : devices.Device {
 	private {
 		string name;
 		Socket pub, sub;
 		Context cxt;
 	}
-	this(Context cxt, string name) {
+	/**
+	Prepare a hub and have it bind the required sockets
+	
+	@param cxt Context to use to initialize sockets 
+	@param name Name of the hub
+	@param pport Publisher port
+	@param sport Subscriber port
+	*/
+	this(Context cxt, string name, uint pport=5667, uint sport=5668) {
 		this.cxt = cxt;
 		this.name = name;
 		pub = new Socket(cxt, Socket.Type.PUB);
-		pub.bind("tcp://*:5667");
+		pub.bind("tcp://*:%d".format(pport));
 		sub = new Socket(cxt, Socket.Type.SUB);
-		sub.bind("tcp://*:5668");
+		sub.bind("tcp://*:%d".format(sport));
 		sub.subscribe(PROTOCOL);
 		sub.subscribe("");
 	}
 	
+	/**
+	Start a Hub's main task
+	
+	This hub will receive and rebroadcast all messages.
+	
+	It also follows any instructions given in messages sent with the "BigBrother-PROTOCOL" topic.
+	*/
 	void run() {
 		bool forward = true;
 		while(this.cxt.raw != null) {

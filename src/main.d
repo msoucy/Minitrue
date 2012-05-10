@@ -62,7 +62,7 @@ void dmain()
 	
 	auto dev = new ForwarderDevice(front, back);
 	+/
-	BBHub hub = new BBHub(context, "BB-hub");
+	Hub hub = new Hub(context, "BB-hub");
 	hub.run();
 }
 
