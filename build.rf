@@ -6,6 +6,7 @@
 -I""
 
 "src/bigbrother/bigbrother.d"
+"src/bigbrother/jparse.d"
 "src/bigbrother/protocol.d"
 "src/dzmq/devices.d"
 "src/dzmq/dzmq.d"
