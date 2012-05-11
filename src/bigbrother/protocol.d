@@ -1,6 +1,5 @@
 /** @file protocol.d
-BigBrother protocol data
-
+@brief BigBrother protocol data
 @author Matthew Soucy <msoucy@csh.rit.edu>
 @date May 10, 2012
 @version 0.0.1
@@ -16,37 +15,6 @@ import jparse;
 immutable PROTOCOL = "BigBrother-PROTOCOL";
 /// Protocol version
 immutable PROTOVER = "0.0.1";
-
-/**
-Unescape certain things that JSON really doesn't like
-@TODO: Incomplete
-@param source A raw string literal
-@returns A JSON-safe string
-*/
-string unescape(string source) {
-	string ret;
-	foreach(char ch;source) {
-		switch (ch) {
-            case '"': ret ~= "\\\""; break;
-            case '\\': ret ~= "\\\\"; break;
-            case '/': ret ~= "\\/"; break;
-            case '\b': ret ~= "\\b"; break;
-            case '\f': ret ~= "\\f"; break;
-            case '\n': ret ~= "\\n"; break;
-            case '\r': ret ~= "\\r"; break;
-            case '\t': ret ~= "\\t"; break;
-            default: {
-            	if(ch < 0x001F) {
-            		ret ~= format("\\u%04x\n", ch);
-            	} else {
-            		ret ~= ch;
-        		}
-            	break;
-        	}
-        }
-	}
-	return ret;
-}
 
 /**
 Interface for all message protocols

@@ -1,56 +1,20 @@
 /** @file bigbrother.d
-BigBrother system wrappers
-
+@brief BigBrother system wrappers
 @author Matthew Soucy <msoucy@csh.rit.edu>
 @date May 9, 2012
 @version 0.0.1
 */
+/// BigBrother system wrappers
 module bigbrother;
 
 import std.array, std.algorithm, std.string;
 
 import dzmq, protocol, devices;
 
-
-/**
-BigBrother message sender
-
-Send a BigBrother message via a socket
-
-Sends an already created BBMessage via the Socket
-
-@author Matthew Soucy <msoucy@csh.rit.edu>
-@date May 9, 2012
-*/
-void send_bb(Socket s, BBMessage msg, int flags=0) {
-		s.send_multipart([msg.topic, msg.routing, msg.data], flags);
-}
-
-/**
-BigBrother message receiver
-
-Receive a BigBrother message via a socket
-
-Receives and forms a BBMessage from the provided socket
-
-@authors Matthew Soucy <msoucy@csh.rit.edu>
-@date May 9, 2012
-*/
-BBMessage recv_bb(Socket s, int flags=0) {
-	string[] raw = s.recv_multipart(flags);
-	// We can verify this, since the BigBrother protocol requires it
-	assert(raw.length == 3, "Invalid BigBrother packet");
-	BBMessage msg = BBMessage();
-	msg.topic = raw[0];
-	msg.routes = raw[1].split(":");
-	msg.data = raw[2];
-	return msg;
-}
-
-/// BigBrother message wrapper
 /**
 Store and parse a BigBrother message
 
+@brief BigBrother message wrapper
 @author Matthew Soucy <msoucy@csh.rit.edu>
 @date May 9, 2012
 */
@@ -67,6 +31,41 @@ struct BBMessage {
 		return routes.join(":");
 	}
 }
+
+
+/**
+Receive a BigBrother message via a socket
+
+Receives and forms a BBMessage from the provided socket
+
+@brief BigBrother message receiver
+@authors Matthew Soucy <msoucy@csh.rit.edu>
+@date May 9, 2012
+*/
+BBMessage recv_bb(Socket s, int flags=0) {
+	string[] raw = s.recv_multipart(flags);
+	// We can verify this, since the BigBrother protocol requires it
+	assert(raw.length == 3, "Invalid BigBrother packet");
+	BBMessage msg = BBMessage();
+	msg.topic = raw[0];
+	msg.routes = raw[1].split(":");
+	msg.data = raw[2];
+	return msg;
+}
+
+/**
+Send a BigBrother message via a socket
+
+Sends an already created BBMessage via the Socket
+
+@brief BigBrother message sender
+@author Matthew Soucy <msoucy@csh.rit.edu>
+@date May 9, 2012
+*/
+void send_bb(Socket s, BBMessage msg, int flags=0) {
+	s.send_multipart([msg.topic, msg.routing, msg.data], flags);
+}
+
 
 /// BigBrother Hub class
 /**
@@ -132,5 +131,22 @@ class Hub : devices.Device {
 			}
 		}
 		throw new ZMQError();
+	}
+	
+	/**
+	@brief Subscribe to a specific server
+	@param addr The address of the server to subscribe to
+	*/
+	void subscribe_server(string addr) {
+		// It'll automatically throw a ZMQError if the address is invalid
+		this.sub.connect(addr);
+	}
+	/**
+	@brief Publish to a specific server
+	@param addr The address of the server to publish to
+	*/
+	void publish_server(string addr) {
+		// It'll automatically throw a ZMQError if the address is invalid
+		this.sub.connect(addr);
 	}
 }

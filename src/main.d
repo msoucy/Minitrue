@@ -8,35 +8,34 @@ import std.string;
 import dzmq, devices;
 import bigbrother, protocol;
 
-void cmain() {
+void smain() {
 	Context context = new Context(1);
 	
 	// Socket to talk to server
 	writef("Connecting to hello world server…\n");
 	Socket requester = new Socket(context, Socket.Type.SUB);
-	requester.connect("tcp://localhost:5667");
+	requester.connect("tcp://localhost:5661");
 	requester.subscribe("ZMQTesting");
 	
-	int request_nbr;
-	for (request_nbr = 0; request_nbr != 10; request_nbr++) {
+	while(1) {
 		auto msg = requester.recv_bb();
-		writef("Received %s: %s (%d)\n", msg.topic, msg.data, request_nbr);
+		writef("Received %s: %s\n", msg.topic, msg.data);
 		writef("\tRouting: %s\n", msg.routing);
 	}
 }
 
-void smain()
+void pmain()
 {
 	Context context = new Context(1);
 	
 	// Socket to talk to clients
 	Socket responder = new Socket(context, Socket.Type.PUB);
-	responder.connect("tcp://*:5668");
+	responder.connect("tcp://localhost:5667");
 	
 	BBMessage msg;
 	msg.topic = "ZMQTesting";
 	
-	int i=0;
+	ulong i=0;
 	while (1) {
 		// Wait for next request from client
 		msg.data = format(`{"index":%d}`,i++);
@@ -47,30 +46,21 @@ void smain()
 	}
 }
 
-void dmain()
+void d1main()
 {
 	Context context = new Context(1);
 	
-	/+
-	// Socket to talk to clients
-	Socket front = new Socket(context, Socket.Type.SUB);
-	front.connect("tcp://localhost:5668");
-	front.subscribe("");
-	
-	Socket back = new Socket(context, Socket.Type.PUB);
-	back.bind("tcp://*:5667");
-	
-	auto dev = new ForwarderDevice(front, back);
-	+/
-	Hub hub = new Hub(context, "BB-hub");
+	Hub hub = new Hub(context, "HubA", 5661, 5667);
 	hub.run();
 }
 
-void jsontest() {
-	writef("==> ");stdout.flush();
-	string s = stdin.readln()[0..$-1];
-	auto x = new BBProtocol(`{"version":"`~s~`"}`);
-	writef("%s\n", x.ver);
+void d2main()
+{
+	Context context = new Context(1);
+	
+	Hub hub = new Hub(context, "HubB", 5668, 5662);
+	hub.subscribe_server("tcp://127.0.0.1:5661");
+	hub.run();
 }
 
 void main(string[] argv) {
@@ -78,8 +68,8 @@ void main(string[] argv) {
 		stderr.writeln("Error: Invalid arguments");
 		return;
 	}
-	if(argv[1] == "server") smain();
-	else if(argv[1] == "client") cmain();
-	else if(argv[1] == "device") dmain();
-	else if(argv[1] == "json") jsontest();
+	if(argv[1] == "pub") pmain();
+	else if(argv[1] == "sub") smain();
+	else if(argv[1] == "d1") d1main();
+	else if(argv[1] == "d2") d2main();
 }

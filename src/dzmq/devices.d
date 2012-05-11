@@ -1,6 +1,5 @@
 /** @file devices.d
-D ZeroMQ device classes
-
+@brief D ZeroMQ device classes
 @authors Matthew Soucy <msoucy@csh.rit.edu>
 @date May 9, 2012
 */
@@ -13,9 +12,9 @@ import dzmq;
 
 import std.stdio : writef;
 
-/// Interface for all devices
 /**
 A device connects two related sockets, and is typically used for transferring data along a chain.
+@brief Interface for all devices
 */
 interface Device {
 	/// Type of device

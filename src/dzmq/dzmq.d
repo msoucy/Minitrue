@@ -1,6 +1,5 @@
 /** @file dzmq.d
-D ZeroMQ class wrappers
-
+@brief D ZeroMQ class wrappers
 @authors Matthew Soucy <msoucy@csh.rit.edu>
 @date May 9, 2012
 @version 0.0.1
