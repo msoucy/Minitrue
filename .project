@@ -19,4 +19,15 @@
 	<natures>
 		<nature>org.dsource.ddt.ide.core.nature</nature>
 	</natures>
+	<filteredResources>
+		<filter>
+			<id>1336706995197</id>
+			<name></name>
+			<type>10</type>
+			<matcher>
+				<id>org.eclipse.ui.ide.multiFilter</id>
+				<arguments>1.0-name-matches-false-false-docs</arguments>
+			</matcher>
+		</filter>
+	</filteredResources>
 </projectDescription>

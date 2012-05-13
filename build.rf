@@ -10,8 +10,6 @@
 "src/bigbrother/protocol.d"
 "src/dzmq/devices.d"
 "src/dzmq/dzmq.d"
-"src/dzmq/zmq.d"
-"src/dzmq/zmq_utils.d"
 "src/main.d"
 
 -L-lzmq
