@@ -6,11 +6,13 @@
 ///D ZeroMQ device classes
 module devices;
 
+/// @cond NoDoc
 // Get the base objects
 private import ZeroMQ.zmq;
 import dzmq;
 
 import std.stdio : writef;
+/// @endcond
 
 /**
 A device connects two related sockets, and is typically used for transferring data along a chain.
@@ -28,8 +30,9 @@ interface Device {
 	    /// User-defined connection, not built in to 0MQ
 	    CUSTOM,
 	}
-	/// Run a ZMQ Device
 	/**
+	@brief Run a ZMQ Device
+	
 	This action will block until the device's context is destroyed or the function terminates.
 	*/
 	void run();

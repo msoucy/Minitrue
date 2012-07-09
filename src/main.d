@@ -1,4 +1,3 @@
-
 import core.thread;
 import core.time;
 
@@ -59,7 +58,7 @@ void d2main()
 	Context context = new Context(1);
 	
 	Hub hub = new Hub(context, "HubB", 5668, 5662);
-	hub.subscribe_server("tcp://127.0.0.1:5661");
+	hub.handle_command("subscribe", "tcp://127.0.0.1:5661");
 	hub.run();
 }
 

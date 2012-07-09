@@ -7,10 +7,12 @@
 ///D ZeroMQ class wrappers
 module dzmq;
 
+/// @cond NoDoc
 private import ZeroMQ.zmq;
 
 import std.string;
 import std.conv;
+/// @endcond
 
 /// ZeroMQ context manager
 /**

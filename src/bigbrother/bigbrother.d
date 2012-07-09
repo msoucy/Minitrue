@@ -1,22 +1,23 @@
 /** @file bigbrother.d
 @brief BigBrother system wrappers
 @author Matthew Soucy <msoucy@csh.rit.edu>
-@date May 9, 2012
+@date July 9, 2012
 @version 0.0.1
 */
+
 /// BigBrother system wrappers
 module bigbrother;
 
-import std.array, std.algorithm, std.string;
-
+/// @cond NoDoc
+import std.array, std.algorithm, std.exception, std.json, std.string, std.stdio;
 import dzmq, protocol, devices;
+/// @endcond
 
 /**
 Store and parse a BigBrother message
 
 @brief BigBrother message wrapper
 @author Matthew Soucy <msoucy@csh.rit.edu>
-@date May 9, 2012
 */
 struct BBMessage {
 	/// Topic of the message
@@ -26,7 +27,11 @@ struct BBMessage {
 	/// Message body
 	string data;
 	
-	/// Protocol-ready form of the routing information
+	/** @property routing
+	Protocol-ready form of the routing information
+	Read-only
+	@returns A \c : delimited list of server names
+	*/
 	@property string routing() {
 		return routes.join(":");
 	}
@@ -36,14 +41,18 @@ struct BBMessage {
 /**
 Receive a BigBrother message via a socket
 
-Receives and forms a BBMessage from the provided socket
+Receives and forms a BBMessage from the provided socket.
+Designed with UFCS in mind.
+
+@param sock The socket to receive a BBMessage from
+@param flags The socket flags to use
+@returns The BBMessage received
 
 @brief BigBrother message receiver
 @authors Matthew Soucy <msoucy@csh.rit.edu>
-@date May 9, 2012
 */
-BBMessage recv_bb(Socket s, int flags=0) {
-	string[] raw = s.recv_multipart(flags);
+BBMessage recv_bb(Socket sock, int flags=0) {
+	string[] raw = sock.recv_multipart(flags);
 	// We can verify this, since the BigBrother protocol requires it
 	assert(raw.length == 3, "Invalid BigBrother packet");
 	BBMessage msg = BBMessage();
@@ -57,22 +66,26 @@ BBMessage recv_bb(Socket s, int flags=0) {
 Send a BigBrother message via a socket
 
 Sends an already created BBMessage via the Socket
+Designed with UFCS in mind.
+
+@param sock The socket to send a BBMessage with
+@param msg The message to send
+@param flags The socket flags to use
 
 @brief BigBrother message sender
 @author Matthew Soucy <msoucy@csh.rit.edu>
-@date May 9, 2012
 */
-void send_bb(Socket s, BBMessage msg, int flags=0) {
-	s.send_multipart([msg.topic, msg.routing, msg.data], flags);
+void send_bb(Socket sock, BBMessage msg, int flags=0) {
+	sock.send_multipart([msg.topic, msg.routing, msg.data], flags);
 }
 
 
-/// BigBrother Hub class
 /**
+@brief BigBrother Hub class
+
 Handles a BigBrother hub according to the specification
 
 @author Matthew Soucy <msoucy@csh.rit.edu>
-@date May 9, 2012
 */
 class Hub : devices.Device {
 	private {
@@ -111,17 +124,26 @@ class Hub : devices.Device {
 		while(this.cxt.raw != null) {
 			BBMessage msg = sub.recv_bb();
 			forward=true;
-			if(msg.routes.canFind(this.name)) {
-				// It's already been through this hub once
-				forward = false;
-			} else if(msg.topic == PROTOCOL) {
-				// Handle PROTOCOL messages
-				auto parsed = new BBProtocol(msg.data);
-				forward = parsed.forward;
-				if(parsed.listen != "") {
-					// It contains a Listen command
-					sub.connect(parsed.listen);
+			try {
+				auto parsed = parseJSON(msg.data);
+				// Make sure it's an object or an array
+				if(parsed.type == JSON_TYPE.OBJECT) {
+					forward = process_message(msg);
+				} else if(parsed.type == JSON_TYPE.ARRAY) {
+					foreach(message;parsed.array) {
+						// If not process_message, forward = false
+						if(!process_message(BBMessage(toJSON(&message)))) {
+							forward = false;
+						}
+					}
+				} else {
+					"Invalid protocol type".writeln();
+					forward = false;
 				}
+			} catch(JSONException e) {
+				// So it's invalid JSON.
+			} catch(Exception e) {
+				// Invalid protocol
 			}
 			
 			if(forward) {
@@ -134,19 +156,47 @@ class Hub : devices.Device {
 	}
 	
 	/**
-	@brief Subscribe to a specific server
-	@param addr The address of the server to subscribe to
+	Handle Protocol messages
+	@param cmd Command to parse
+	@param data Data to pass to the command
 	*/
-	void subscribe_server(string addr) {
-		// It'll automatically throw a ZMQError if the address is invalid
-		this.sub.connect(addr);
+	public void handle_command(string cmd, string data) {
+		switch(cmd) {
+			case "pass": break;
+			case "subscribe": {
+				this.sub.connect(data);
+				break;
+			}
+			case "publish": {
+				this.pub.connect(data);
+				break;
+			}
+			default: break;
+		}
 	}
+	
 	/**
-	@brief Publish to a specific server
-	@param addr The address of the server to publish to
+	Handle the actual work in a message.
+	@returns true if the message should be forwarded
 	*/
-	void publish_server(string addr) {
-		// It'll automatically throw a ZMQError if the address is invalid
-		this.sub.connect(addr);
+	private bool process_message(BBMessage msg) {
+		bool forward = true;
+		if(msg.routes.canFind(this.name)) {
+			// It's already been through this hub once
+			forward = false;
+		} else if(msg.topic == PROTOCOL) {
+			// Handle PROTOCOL messages
+			auto parsed = new BBProtocol(msg.data);
+			forward = parsed.forward;
+			try {
+				this.handle_command(parsed.command, parsed.data);
+			} catch(ZMQError e) {
+				// So we don't want the hub to shut down.
+				// Let's just log a message.
+				"Error: %s\n".writef(e.msg);
+			}
+		}
+		return forward;
 	}
 }
+

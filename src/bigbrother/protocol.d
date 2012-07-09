@@ -1,57 +1,66 @@
 /** @file protocol.d
-@brief BigBrother protocol data
+@brief BigBrother protocol classes and handlers
 @author Matthew Soucy <msoucy@csh.rit.edu>
 @date May 10, 2012
 @version 0.0.1
 */
-///BigBrother Protocol data
+
+/// BigBrother protocol data
 module protocol;
 
-import std.json, std.string;
-
+/// @cond NoDoc
+// Import JSON helping stuff
 import jparse;
+/// @endcond
 
 /// Protocol identifier
 immutable PROTOCOL = "BigBrother-PROTOCOL";
 /// Protocol version
 immutable PROTOVER = "0.0.1";
 
-/**
-Interface for all message protocols
+/** @interface Protocol
+@brief Interface for all message protocols
 
 This is a simple interface to provide a standard system for
 BigBrother JSON, to allow programs to handle multiple protocols
 with ease.
 
-@brief Protocol interface
 @authors Matthew Soucy, msoucy@csh.rit.edu
 @date May 9, 2012
 */
 interface Protocol {
-	/**
+	/** @property json(string raw)
 	Convert a JSON string into a Property
 	Implementations should attempt to fill in any fields that
 	they need or want.
+	
+	@param[in] raw The raw JSON to read and parse
 	
 	@brief Form a protocol from a JSON string
 	@authors Matthew Soucy, msoucy@csh.rit.edu
 	@date May 9, 2012
 	*/
-	@property void json(string);
-	/**
-	Convert a Property back into a JSON string
+	@property void json(string raw);
+	
+	/** @property json
+	Convert a Protocol back into a JSON string
 	This should fill in any fields that the protocol requires or uses.
+	
+	@returns The JSON string containing the values in the message
 	
 	@brief Form a JSON string from a protocol
 	@authors Matthew Soucy, msoucy@csh.rit.edu
 	@date May 9, 2012
 	*/
 	@property string json();
+	
 	/**
 	Create a string that is designed to be human-readable
 	
-	Convert a Property back into a JSON string
+	Convert a Protocol back into a JSON string
 	This should fill in any fields that the protocol requires or uses.
+	
+	@returns A human-readable string
 	
 	@authors Matthew Soucy, msoucy@csh.rit.edu
 	@date May 9, 2012
@@ -68,14 +77,15 @@ Wraps a standard BigBrother-PROTOCOL message and turns it into a useful class
 @date May 9, 2012
 */
 class BBProtocol : Protocol {
-	public {
-		/// Whether this message should be forwarded
-		bool forward;
-		/// Address to subscribe to
-		string listen;
-		/// Protocol version
-		string ver = PROTOVER;
-	}
+	/// Whether this message should be forwarded
+	public bool forward;
+	/// Action to do
+	public string command;
+	/// Data to be used by the command
+	public string data;
+	/// Protocol version
+	public string ver = PROTOVER;
+	
 	/**
 	Fill the fields upon creation
 	@param raw Raw JSON string to parse
@@ -93,9 +103,11 @@ class BBProtocol : Protocol {
 		if("forward" in js.object) {
 			forward = js.object["forward"].expect!bool;
 		}
-		// Keepalive flag is implicitly ignored - it detected this message, after all
-		if("listen" in js.object) {
-			listen = js.object["listen"].expect!string;
+		if("command" in js.object) {
+			command = js.object["command"].expect!string;
+		}
+		if("data" in js.object) {
+			ver = js.object["data"].expect!string;
 		}
 		if("version" in js.object) {
 			ver = js.object["version"].expect!string;
@@ -106,8 +118,8 @@ class BBProtocol : Protocol {
 	@returns A completely filled JSON string
 	*/
 	@property string json() {
-		return `{"forward" : %s, "listen" : "%s", "version" : "%s"}`
-			.format(forward, listen.unescape(), ver.unescape());
+		return `{"forward" : %s, "command" : "%s", "data" : "%s", "version" : "%s"}`
+			.format(forward, command.unescape(), data.unescape(), ver.unescape());
 	}
 	/**
 	@brief Format data to be human-readable
@@ -117,3 +129,4 @@ class BBProtocol : Protocol {
 		return json();
 	}
 }
+

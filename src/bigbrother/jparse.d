@@ -3,10 +3,14 @@
 @author Matthew Soucy <msoucy@csh.rit.edu>
 @date May 9, 2012
 */
-///JSON type improvement functions
+
+/// JSON type improvement functions
 module jparse;
 
-import std.json, std.string;
+/// @cond NoDoc
+// Import json and string handlers
+public import std.json, std.string;
+/// @endcond
 
 /**
 Coerce a JSONValue to a long if possible
@@ -73,30 +77,31 @@ Coerce a JSONValue to an array of T if possible
 
 /**
 Unescape certain things that JSON really doesn't like
-@param source A raw string literal
+@param[in] source A raw string literal
 @returns A JSON-safe string
 */
 string unescape(string source) {
 	string ret;
 	foreach(char ch;source) {
 		switch (ch) {
-            case '"': ret ~= "\\\""; break;
-            case '\\': ret ~= "\\\\"; break;
-            case '/': ret ~= "\\/"; break;
-            case '\b': ret ~= "\\b"; break;
-            case '\f': ret ~= "\\f"; break;
-            case '\n': ret ~= "\\n"; break;
-            case '\r': ret ~= "\\r"; break;
-            case '\t': ret ~= "\\t"; break;
-            default: {
-            	if(ch < 0x001F) {
-            		ret ~= format("\\u%04x\n", ch);
-            	} else {
-            		ret ~= ch;
-        		}
-            	break;
-        	}
-        }
+			case '"': ret ~= "\\\""; break;
+			case '\\': ret ~= "\\\\"; break;
+			case '/': ret ~= "\\/"; break;
+			case '\b': ret ~= "\\b"; break;
+			case '\f': ret ~= "\\f"; break;
+			case '\n': ret ~= "\\n"; break;
+			case '\r': ret ~= "\\r"; break;
+			case '\t': ret ~= "\\t"; break;
+			default: {
+				if(ch < 0x001F) {
+					ret ~= format("\\u%04x\n", ch);
+				} else {
+					ret ~= ch;
+				}
+				break;
+			}
+		}
 	}
 	return ret;
 }
+
