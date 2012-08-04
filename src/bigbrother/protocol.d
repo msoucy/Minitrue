@@ -3,6 +3,7 @@
 @author Matthew Soucy <msoucy@csh.rit.edu>
 @date May 10, 2012
 @version 0.0.1
+@todo Possibly rename PROTOCOL string
 */
 
 /// BigBrother protocol data
@@ -34,7 +35,7 @@ interface Protocol {
 	Implementations should attempt to fill in any fields that
 	they need or want.
 	
-	@param[in] raw The raw JSON to read and parse
+	@param raw The raw JSON to read and parse
 	
 	@brief Form a protocol from a JSON string
 	@authors Matthew Soucy, msoucy@csh.rit.edu

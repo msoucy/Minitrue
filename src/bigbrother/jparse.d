@@ -2,6 +2,7 @@
 @brief Parsing improvement system for std.json
 @author Matthew Soucy <msoucy@csh.rit.edu>
 @date May 9, 2012
+@todo add more coercions
 */
 
 /// JSON type improvement functions
@@ -77,7 +78,7 @@ Coerce a JSONValue to an array of T if possible
 
 /**
 Unescape certain things that JSON really doesn't like
-@param[in] source A raw string literal
+@param source A raw string literal
 @returns A JSON-safe string
 */
 string unescape(string source) {

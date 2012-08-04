@@ -13,13 +13,13 @@ void smain() {
 	// Socket to talk to server
 	writef("Connecting to hello world server…\n");
 	Socket requester = new Socket(context, Socket.Type.SUB);
-	requester.connect("tcp://localhost:5661");
+	requester.connect("tcp://localhost:5668");
 	requester.subscribe("ZMQTesting");
 	
 	while(1) {
 		auto msg = requester.recv_bb();
 		writef("Received %s: %s\n", msg.topic, msg.data);
-		writef("\tRouting: %s\n", msg.routing);
+		writef("\tRouting: %s\n", msg.routes);
 	}
 }
 
@@ -35,9 +35,12 @@ void pmain()
 	msg.topic = "ZMQTesting";
 	
 	ulong i=0;
+	string data = "Init";
 	while (1) {
 		// Wait for next request from client
-		msg.data = format(`{"index":%d}`,i++);
+		//msg.data = format(`{"index":%d}`,i++);
+		data = readln().strip();
+		msg.data = format(`{"data":%s}`,data);
 		responder.send_bb(msg);
 		
 		// Do some 'work'
@@ -67,8 +70,12 @@ void main(string[] argv) {
 		stderr.writeln("Error: Invalid arguments");
 		return;
 	}
-	if(argv[1] == "pub") pmain();
-	else if(argv[1] == "sub") smain();
-	else if(argv[1] == "d1") d1main();
-	else if(argv[1] == "d2") d2main();
+	switch(argv[1]) {
+	case "pub": pmain();break;
+	case "sub": smain();break;
+	case "d1": d1main();break;
+	case "d2": d2main();break;
+	default: writef("Invalid parameter");break;
+	}
 }
+

@@ -27,13 +27,13 @@ struct BBMessage {
 	/// Message body
 	string data;
 	
-	/** @property routing
+	/**
 	Protocol-ready form of the routing information
 	Read-only
-	@returns A \c : delimited list of server names
+	@returns A colon-delimited list of server names
 	*/
 	@property string routing() {
-		return routes.join(":");
+		return routes.join(";");
 	}
 }
 
@@ -57,7 +57,7 @@ BBMessage recv_bb(Socket sock, int flags=0) {
 	assert(raw.length == 3, "Invalid BigBrother packet");
 	BBMessage msg = BBMessage();
 	msg.topic = raw[0];
-	msg.routes = raw[1].split(":");
+	msg.routes = raw[1].split(";");
 	msg.data = raw[2];
 	return msg;
 }
@@ -159,6 +159,8 @@ class Hub : devices.Device {
 	Handle Protocol messages
 	@param cmd Command to parse
 	@param data Data to pass to the command
+	@todo Look into adding some sort of refcounting for sub/pub
+	@todo Look into implementing filters
 	*/
 	public void handle_command(string cmd, string data) {
 		switch(cmd) {

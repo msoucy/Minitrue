@@ -2,6 +2,7 @@
 @brief D ZeroMQ device classes
 @authors Matthew Soucy <msoucy@csh.rit.edu>
 @date May 9, 2012
+@todo Look into using templates with Device.Type instead of separate classes
 */
 ///D ZeroMQ device classes
 module devices;
@@ -15,8 +16,8 @@ import std.stdio : writef;
 /// @endcond
 
 /**
-A device connects two related sockets, and is typically used for transferring data along a chain.
 @brief Interface for all devices
+A device connects two related sockets, and is typically used for transferring data along a chain.
 */
 interface Device {
 	/// Type of device
@@ -49,7 +50,7 @@ abstract class DZMQDevice : Device {
 	@param back Backend socket
 	@param type Type of the device
 	*/
-	this(Socket front, Socket back, Type type) {
+	this(Socket front, Socket back, Type type=Type.CUSTOM) {
 		this.front = front;
 		this.back = back;
 		this.type = type;
