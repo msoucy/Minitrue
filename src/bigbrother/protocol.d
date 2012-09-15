@@ -15,9 +15,9 @@ import jparse;
 /// @endcond
 
 /// Protocol identifier
-immutable PROTOCOL = "BigBrother-PROTOCOL";
+immutable PROTOCOL = "/BigBrother/protocol";
 /// Protocol version
-immutable PROTOVER = "0.0.1";
+immutable PROTOVER = "0.0.2";
 
 /** @interface Protocol
 @brief Interface for all message protocols

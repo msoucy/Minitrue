@@ -34,17 +34,11 @@ void pmain()
 	BBMessage msg;
 	msg.topic = "ZMQTesting";
 	
-	ulong i=0;
-	string data = "Init";
 	while (1) {
 		// Wait for next request from client
-		//msg.data = format(`{"index":%d}`,i++);
-		data = readln().strip();
-		msg.data = format(`{"data":%s}`,data);
+		writef(">> ");
+		msg.data = `{"data":"%s"}`.format(readln().strip());
 		responder.send_bb(msg);
-		
-		// Do some 'work'
-		Thread.sleep(dur!"seconds"(1));
 	}
 }
 

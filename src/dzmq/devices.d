@@ -57,8 +57,15 @@ abstract class DZMQDevice : Device {
 	}
 	void run() {
 		if(this.type != Type.CUSTOM) {
-			if(zmq_device(type, this.front.raw, this.back.raw) != 0) {
-				throw new ZMQError();
+			static if(ZMQ_VERSION_MAJOR == 2) {
+				// 0MQ version 2 supports devices, but they're gone in 3
+				if(zmq_device(type, this.front.raw, this.back.raw) != 0) {
+					throw new ZMQError();
+				}
+			} else static if(ZMQ_VERSION_MAJOR == 3) {
+				// We'll have to support this at some point...
+			} else {
+				static assert(0,"Unknown 0MQ version");
 			}
 		}
 	}
