@@ -6,11 +6,13 @@
 */
 
 /// BigBrother system wrappers
-module bigbrother;
+module bigbrother.bigbrother;
 
 /// @cond NoDoc
 import std.array, std.algorithm, std.exception, std.json, std.string, std.stdio;
-import dzmq, protocol, devices;
+import metus.dzmq.dzmq,
+       metus.dzmq.devices;
+import bigbrother.protocol;
 /// @endcond
 
 /**
@@ -87,7 +89,7 @@ Handles a BigBrother hub according to the specification
 
 @author Matthew Soucy <msoucy@csh.rit.edu>
 */
-class Hub : devices.Device {
+class Hub : Device {
 	private {
 		string name;
 		Socket pub, sub;
@@ -152,7 +154,7 @@ class Hub : devices.Device {
 				pub.send_bb(msg, Socket.Flags.NOBLOCK);
 			}
 		}
-		throw new ZMQError();
+		throw new ZMQException();
 	}
 	
 	/**
@@ -192,7 +194,7 @@ class Hub : devices.Device {
 			forward = parsed.forward;
 			try {
 				this.handle_command(parsed.command, parsed.data);
-			} catch(ZMQError e) {
+			} catch(ZMQException e) {
 				// So we don't want the hub to shut down.
 				// Let's just log a message.
 				"Error: %s\n".writef(e.msg);

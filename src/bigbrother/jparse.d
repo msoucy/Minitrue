@@ -6,7 +6,7 @@
 */
 
 /// JSON type improvement functions
-module jparse;
+module bigbrother.jparse;
 
 /// @cond NoDoc
 // Import json and string handlers

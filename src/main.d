@@ -4,8 +4,10 @@ import core.time;
 import std.stdio;
 import std.string;
 
-import dzmq, devices;
-import bigbrother, protocol;
+import metus.dzmq.dzmq,
+       metus.dzmq.devices;
+import bigbrother.bigbrother,
+       bigbrother.protocol;
 
 void smain() {
 	Context context = new Context(1);

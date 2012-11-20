@@ -7,11 +7,11 @@
 */
 
 /// BigBrother protocol data
-module protocol;
+module bigbrother.protocol;
 
 /// @cond NoDoc
 // Import JSON helping stuff
-import jparse;
+import bigbrother.jparse;
 /// @endcond
 
 /// Protocol identifier
